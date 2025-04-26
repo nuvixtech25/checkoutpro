@@ -93,15 +93,6 @@ export const generatePixPayment = async (billingData: BillingData) => {
       description: billingData.description || `Pedido #${billingData.orderId || 'novo'}`
     };
 
-    const requiredFields = ['name', 'cpfCnpj', 'email', 'phone', 'orderId', 'value'];
-    const missingFields = requiredFields.filter(field => !formattedData[field]);
-
-    if (missingFields.length > 0) {
-      throw new Error(`Campos obrigatórios faltando: ${missingFields.join(', ')}`);
-    }
-
-    console.log('Making API request to create-asaas-customer endpoint');
-
     const response = await fetch('/api/create-asaas-customer', {
       method: 'POST',
       headers: {
@@ -133,14 +124,6 @@ export const generatePixPayment = async (billingData: BillingData) => {
         validQrCodeImage = '';
       }
     }
-
-    console.log("Safe response data prepared:", {
-      paymentId: responseData.paymentId || responseData.payment?.id || '',
-      value: responseData.value,
-      valueType: typeof responseData.value,
-      hasQRCode: !!responseData.qrCode,
-      hasQRImage: !!validQrCodeImage
-    });
 
     const safeResponseData = {
       ...responseData,

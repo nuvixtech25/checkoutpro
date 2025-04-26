@@ -5,7 +5,6 @@ import { processPaymentFlow } from './asaas/payment-processor';
 import { getAsaasApiKey } from './services/asaasKeyService';
 
 const handler: Handler = async (event: HandlerEvent) => {
-  // Verifica se o método HTTP é POST
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -13,7 +12,6 @@ const handler: Handler = async (event: HandlerEvent) => {
     };
   }
 
-  // Verifica se o body da requisição foi enviado
   if (!event.body) {
     console.error('Corpo da requisição não fornecido');
     return {
@@ -23,11 +21,9 @@ const handler: Handler = async (event: HandlerEvent) => {
   }
 
   try {
-    // Parse do body recebido
     const requestData: AsaasCustomerRequest = JSON.parse(event.body);
     console.log('Solicitação recebida:', requestData);
 
-    // Validação dos campos obrigatórios
     const requiredFields = ['name', 'cpfCnpj', 'email', 'phone', 'orderId', 'value'];
     const missingFields = requiredFields.filter(field => !requestData[field]);
     if (missingFields.length > 0) {
@@ -38,15 +34,16 @@ const handler: Handler = async (event: HandlerEvent) => {
       };
     }
 
-    // Determina o ambiente de operação
     const useProduction = process.env.USE_ASAAS_PRODUCTION === 'true';
+    console.log(`🔵 Ambiente detectado: ${useProduction ? 'Produção' : 'Sandbox'}`);
+
     const isSandbox = !useProduction;
     const apiBaseUrl = isSandbox 
       ? 'https://sandbox.asaas.com/api/v3' 
       : 'https://api.asaas.com/v3';
+
     console.log(`Ambiente: ${isSandbox ? 'Sandbox' : 'Produção'}`);
 
-    // Obter a chave API com mecanismo de fallback
     const apiKey = await getAsaasApiKey(isSandbox);
     if (!apiKey) {
       console.error(`Nenhuma chave ${isSandbox ? 'sandbox' : 'produção'} encontrada`);
@@ -55,9 +52,9 @@ const handler: Handler = async (event: HandlerEvent) => {
         body: JSON.stringify({ error: 'API key not configured' }),
       };
     }
+
     console.log(`Chave API obtida com sucesso: ${apiKey.substring(0, 8)}...`);
 
-    // Processa o pagamento com a chave API obtida
     const result = await processPaymentFlow(
       requestData,
       apiKey,

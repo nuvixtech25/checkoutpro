@@ -3,7 +3,6 @@ import { AsaasCustomerRequest, SupabasePaymentData } from './types';
 import { createAsaasCustomer, createAsaasPayment, getAsaasPixQrCode } from './asaas-api';
 import { savePaymentData, updateOrderAsaasPaymentId } from './supabase-operations';
 
-// Função para processar o pagamento com a chave API fornecida
 export async function processPaymentFlow(
   requestData: AsaasCustomerRequest,
   apiKey: string,
@@ -12,29 +11,29 @@ export async function processPaymentFlow(
 ) {
   console.log(`🚀 Iniciando fluxo de pagamento com API URL: ${apiUrl}`);
   console.log(`💰 Valor do pagamento: ${requestData.value}`);
-  
+
   if (!apiKey) {
     console.error('❌ Chave API do Asaas não fornecida');
     throw new Error('Chave API do Asaas não configurada corretamente');
   }
-  
+
   try {
-    // 🔵 Opcional: usar email temporário se configurado no Supabase
+    // 🔵 1. Verifica se existe configuração de email temporário
     const { data: emailConfig } = await supabase
       .from('asaas_email_config')
       .select('use_temp_email, temp_email')
       .single();
-      
+
     if (emailConfig?.use_temp_email && emailConfig?.temp_email) {
-      console.log('✉️ Substituindo email do cliente pelo temporário:', emailConfig.temp_email);
+      console.log('✉️ Substituindo email do cliente por email temporário:', emailConfig.temp_email);
       requestData.email = emailConfig.temp_email;
     }
-    
-    // 1. Criar cliente no Asaas
+
+    // ✅ 2. Cria o cliente no Asaas
     const customer = await createAsaasCustomer(requestData, apiKey, apiUrl);
     console.log('✅ Cliente criado:', customer);
 
-    // 2. Criar pagamento PIX
+    // ✅ 3. Cria o pagamento PIX
     const description = requestData.description || `Pedido #${requestData.orderId}`;
     const payment = await createAsaasPayment(
       customer.id,
@@ -46,44 +45,50 @@ export async function processPaymentFlow(
     );
     console.log('✅ Pagamento criado:', payment);
 
-    // 3. Obter QR Code PIX
+    // ✅ 4. Obtém o QR Code do pagamento
     const pixQrCode = await getAsaasPixQrCode(payment.id, apiKey, apiUrl);
-    console.log('✅ QR Code PIX recebido:', {
+    console.log('✅ QR Code recebido:', {
       success: pixQrCode.success,
       payloadLength: pixQrCode.payload?.length || 0,
       encodedImageLength: pixQrCode.encodedImage?.length || 0
     });
-// 4. Save payment data to Supabase
-const paymentData: SupabasePaymentData = {
-  order_id: requestData.orderId,
-  payment_id: payment.id,
-  status: payment.status,
-  amount: requestData.value,
-  qr_code: pixQrCode.payload,
-  qr_code_image: pixQrCode.encodedImage,
-  copy_paste_key: pixQrCode.payload, // <--- corrigido aqui
-  expiration_date: pixQrCode.expirationDate
-};
 
-const saveResult = await savePaymentData(supabase, paymentData);
-console.log('Dados salvos no Supabase:', saveResult);
+    // ⚠️ Validação: Garantir que o payload (copia e cola) é válido
+    if (!pixQrCode.payload || pixQrCode.payload.length < 10) {
+      console.error('⚠️ QR Code payload inválido:', pixQrCode.payload);
+      throw new Error('QR Code inválido recebido do Asaas.');
+    }
 
-// 5. Update order with Asaas payment ID
-await updateOrderAsaasPaymentId(supabase, requestData.orderId, payment.id);
+    // ✅ 5. Salva os dados no Supabase
+    const paymentData: SupabasePaymentData = {
+      order_id: requestData.orderId,
+      payment_id: payment.id,
+      status: payment.status,
+      amount: requestData.value,
+      qr_code: pixQrCode.payload,
+      qr_code_image: pixQrCode.encodedImage,
+      copy_paste_key: pixQrCode.payload,
+      expiration_date: pixQrCode.expirationDate
+    };
 
-// Return formatted response data
-return {
-  customer,
-  payment,
-  pixQrCode,
-  paymentData: saveResult,
-  qrCodeImage: pixQrCode.encodedImage,
-  qrCode: pixQrCode.payload,
-  copyPasteKey: pixQrCode.payload, // <--- corrigido aqui também
-  expirationDate: pixQrCode.expirationDate
-};
+    const saveResult = await savePaymentData(supabase, paymentData);
+    console.log('💾 Dados salvos no Supabase:', saveResult);
 
+    // ✅ 6. Atualiza a ordem com ID do pagamento
+    const updateOrderResult = await updateOrderAsaasPaymentId(supabase, requestData.orderId, payment.id);
+    console.log('🔄 Pedido atualizado com ID de pagamento:', updateOrderResult);
 
+    // 🎯 7. Retorna os dados finais
+    return {
+      customer,
+      payment,
+      pixQrCode,
+      paymentData: saveResult,
+      qrCodeImage: pixQrCode.encodedImage,
+      qrCode: pixQrCode.payload,
+      copyPasteKey: pixQrCode.payload,
+      expirationDate: pixQrCode.expirationDate
+    };
   } catch (error) {
     console.error('❌ Erro detalhado no fluxo de pagamento:', error);
     throw error;
