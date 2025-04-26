@@ -69,6 +69,8 @@ const handler: Handler = async (event: HandlerEvent) => {
       supabase,
       apiBaseUrl
     );
+
+    // Logar o resultado do processamento de pagamento
     console.log('Resultado do processamento de pagamento:', JSON.stringify(result, null, 2));
 
     return {
@@ -76,6 +78,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       body: JSON.stringify(result),
     };
   } catch (error) {
+    // Log de erro detalhado com stack trace
     console.error('Erro no processamento:', error.stack || error);
     return {
       statusCode: 500,
