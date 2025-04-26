@@ -14,7 +14,15 @@ const handler: Handler = async (event: HandlerEvent) => {
   }
 
   try {
-    const requestData: AsaasCustomerRequest = JSON.parse(event.body || '{}');
+    if (!event.body) {
+      console.error('Corpo da requisição não fornecido');
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Corpo da requisição não fornecido' }),
+      };
+    }
+
+    const requestData: AsaasCustomerRequest = JSON.parse(event.body);
     console.log('Solicitação recebida:', requestData);
 
     // Validation
@@ -33,12 +41,12 @@ const handler: Handler = async (event: HandlerEvent) => {
     const apiBaseUrl = isSandbox 
       ? 'https://sandbox.asaas.com/api/v3' 
       : 'https://api.asaas.com/v3';
-      
+
     console.log(`Ambiente: ${isSandbox ? 'Sandbox' : 'Produção'}`);
     
     // Obter a chave API com mecanismo de fallback
     const apiKey = await getAsaasApiKey(isSandbox);
-    
+
     if (!apiKey) {
       console.error(`Nenhuma chave ${isSandbox ? 'sandbox' : 'produção'} encontrada`);
       return {
@@ -46,9 +54,9 @@ const handler: Handler = async (event: HandlerEvent) => {
         body: JSON.stringify({ error: 'API key not configured' }),
       };
     }
-    
+
     console.log(`Chave API obtida com sucesso: ${apiKey.substring(0, 8)}...`);
-    
+
     // Process payment with the obtained API key
     const result = await processPaymentFlow(
       requestData,
@@ -56,7 +64,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       supabase,
       apiBaseUrl
     );
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify(result),
@@ -67,7 +75,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       statusCode: 500,
       body: JSON.stringify({ 
         error: 'Falha no processamento do pagamento',
-        details: error.message
+        details: error instanceof Error ? error.message : 'Unknown error',
       }),
     };
   }
