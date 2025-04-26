@@ -1,4 +1,4 @@
-
+import { SupabaseClient } from '@supabase/supabase-js';
 import { AsaasCustomerRequest, SupabasePaymentData } from './types';
 import { createAsaasCustomer, createAsaasPayment, getAsaasPixQrCode } from './asaas-api';
 import { savePaymentData, updateOrderAsaasPaymentId } from './supabase-operations';
@@ -7,7 +7,7 @@ import { savePaymentData, updateOrderAsaasPaymentId } from './supabase-operation
 export async function processPaymentFlow(
   requestData: AsaasCustomerRequest,
   apiKey: string,
-  supabase: any,
+  supabase: SupabaseClient,
   apiUrl: string = 'https://sandbox.asaas.com/api/v3'
 ) {
   console.log(`Iniciando fluxo de pagamento com API URL: ${apiUrl}`);

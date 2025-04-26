@@ -22,20 +22,22 @@ const handler: Handler = async (event: HandlerEvent) => {
       };
     }
 
-    const requestData: AsaasCustomerRequest = JSON.parse(event.body);
+    const requestData = JSON.parse(event.body);
     console.log('Solicitação recebida:', requestData);
 
-    // Validation
-    const validationError = validateAsaasCustomerRequest(requestData);
-    if (validationError) {
-      console.error('Erro de validação:', validationError);
+    // Nova Validação rápida:
+    const requiredFields = ['name', 'cpfCnpj', 'email', 'phone', 'orderId', 'value'];
+    const missingFields = requiredFields.filter(field => !requestData[field]);
+
+    if (missingFields.length > 0) {
+      console.error('Campos obrigatórios faltando:', missingFields);
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: validationError }),
+        body: JSON.stringify({ error: `Campos obrigatórios faltando: ${missingFields.join(', ')}` }),
       };
     }
 
-    // Determine environment
+    // Segue seu código normal...
     const useProduction = process.env.USE_ASAAS_PRODUCTION === 'true';
     const isSandbox = !useProduction;
     const apiBaseUrl = isSandbox 
@@ -44,7 +46,6 @@ const handler: Handler = async (event: HandlerEvent) => {
 
     console.log(`Ambiente: ${isSandbox ? 'Sandbox' : 'Produção'}`);
     
-    // Obter a chave API com mecanismo de fallback
     const apiKey = await getAsaasApiKey(isSandbox);
 
     if (!apiKey) {
@@ -57,7 +58,6 @@ const handler: Handler = async (event: HandlerEvent) => {
 
     console.log(`Chave API obtida com sucesso: ${apiKey.substring(0, 8)}...`);
 
-    // Process payment with the obtained API key
     const result = await processPaymentFlow(
       requestData,
       apiKey,
@@ -80,5 +80,3 @@ const handler: Handler = async (event: HandlerEvent) => {
     };
   }
 };
-
-export { handler };
