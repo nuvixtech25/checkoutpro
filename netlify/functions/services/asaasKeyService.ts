@@ -1,9 +1,12 @@
 
 // Re-export everything from the new key manager
-export * from '@/services/asaasKeyManager';
+// Correto:
+export * from '../../../src/services/asaasKeyManager';
 
-import { supabase } from '@/integrations/supabase/client';
-import { getActiveApiKey, AsaasApiKey } from '@/services/asaasKeyManager';
+import { supabase } from '../../../src/integrations/supabase/client';
+import { getActiveApiKey, AsaasApiKey } from '../../../src/services/asaasKeyManager';
+
+
 
 /**
  * Estrutura para caching local de chaves

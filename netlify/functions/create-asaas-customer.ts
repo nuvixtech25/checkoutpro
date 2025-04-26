@@ -1,4 +1,3 @@
-
 import { Handler, HandlerEvent } from '@netlify/functions';
 import { supabase } from './services/supabaseClientService';
 import { AsaasCustomerRequest } from './asaas/types';
