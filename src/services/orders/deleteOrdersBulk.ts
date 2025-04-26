@@ -29,7 +29,7 @@ export const deleteOrdersByPaymentMethod = async (
     
     // Delete each order individually to ensure related records are properly deleted
     let deletedCount = 0;
-    let errors = [];
+    const errors = [];
     
     for (const order of orders) {
       try {

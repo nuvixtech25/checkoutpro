@@ -34,7 +34,7 @@ export const handleCardNumberChange = (
   const cursorPos = e.target.selectionStart ?? e.target.value.length;
   
   // Get the current value
-  let { value } = e.target;
+  const { value } = e.target;
   
   // Format the card number
   const formatted = formatCardNumber(value);

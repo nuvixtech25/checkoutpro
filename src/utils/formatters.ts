@@ -74,7 +74,7 @@ export const validateCpfCnpj = (value: string): boolean => {
     // CNPJ validation
     let size = cleanValue.length - 2
     let numbers = cleanValue.substring(0, size);
-    let digits = cleanValue.substring(size);
+    const digits = cleanValue.substring(size);
     let sum = 0;
     let pos = size - 7;
 
