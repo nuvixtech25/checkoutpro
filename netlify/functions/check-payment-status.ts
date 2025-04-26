@@ -1,13 +1,16 @@
-
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
+import { getAsaasApiKey } from './services/asaasKeyService';
 
 export const handler: Handler = async (event) => {
   // Verificar se o método é GET
   if (event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
       body: JSON.stringify({ error: 'Método não permitido. Use GET.' }),
     };
   }
@@ -18,7 +21,10 @@ export const handler: Handler = async (event) => {
   if (!paymentId) {
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
       body: JSON.stringify({ error: 'ID do pagamento não fornecido.' }),
     };
   }
@@ -32,14 +38,17 @@ export const handler: Handler = async (event) => {
       console.error('Credenciais do Supabase não configuradas');
       return {
         statusCode: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
         body: JSON.stringify({ error: 'Erro de configuração do servidor' }),
       };
     }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Obter a configuração do Asaas
+    // Buscar configuração do Asaas
     console.log('Buscando configuração do Asaas do banco de dados...');
     const { data: asaasConfig, error: configError } = await supabase
       .from('asaas_config')
@@ -51,12 +60,15 @@ export const handler: Handler = async (event) => {
       console.error('Erro ao buscar configuração do Asaas:', configError);
       return {
         statusCode: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
         body: JSON.stringify({ error: 'Erro ao buscar configuração do gateway de pagamento' }),
       };
     }
     
-    // Determinar qual chave API usar com base no modo (sandbox/produção)
+    // Escolher ambiente Sandbox ou Produção
     const usesSandbox = asaasConfig.sandbox === true;
     const asaasApiKey = usesSandbox ? asaasConfig.sandbox_key : asaasConfig.production_key;
     
@@ -72,7 +84,10 @@ export const handler: Handler = async (event) => {
       console.error(`Chave de API ${usesSandbox ? 'sandbox' : 'produção'} não configurada`);
       return {
         statusCode: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
         body: JSON.stringify({ error: `Chave de API ${usesSandbox ? 'sandbox' : 'produção'} não configurada` }),
       };
     }
@@ -118,7 +133,7 @@ export const handler: Handler = async (event) => {
     
     console.log(`Payment status from Asaas API: ${status} for payment ${paymentId}`);
     
-    // Atualizar o status do pagamento no Supabase
+    // Atualizar status no Supabase
     const { data: asaasPayment, error: findError } = await supabase
       .from('asaas_payments')
       .select('order_id')
@@ -128,7 +143,6 @@ export const handler: Handler = async (event) => {
     if (findError) {
       console.error('Erro ao buscar pagamento no Supabase:', findError);
     } else if (asaasPayment) {
-      // Atualizar o status na tabela asaas_payments
       const { error: updatePaymentError } = await supabase
         .from('asaas_payments')
         .update({ status, updated_at: new Date().toISOString() })
@@ -140,7 +154,6 @@ export const handler: Handler = async (event) => {
         console.log(`Updated asaas_payments status to ${status}`);
       }
       
-      // Atualizar o status na tabela orders
       const { error: updateOrderError } = await supabase
         .from('orders')
         .update({ status, updated_at: new Date().toISOString() })
@@ -155,7 +168,7 @@ export const handler: Handler = async (event) => {
     
     return {
       statusCode: 200,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache, no-store, must-revalidate'
       },
@@ -170,8 +183,11 @@ export const handler: Handler = async (event) => {
     console.error('Erro na função:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: error.message || 'Erro interno no servidor' }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+      body: JSON.stringify({ error: error instanceof Error ? error.message : 'Erro interno no servidor' }),
     };
   }
 }
