@@ -1,10 +1,10 @@
 
 import { Handler, HandlerEvent } from '@netlify/functions';
-import { supabase } from './asaas/supabase-client';
+import { supabase } from './services/supabaseClientService';
 import { AsaasCustomerRequest } from './asaas/types';
 import { validateAsaasCustomerRequest } from './asaas/validation';
 import { processPaymentFlow } from './asaas/payment-processor';
-import { getAsaasApiKey } from '../src/services/asaasKeyService';
+import { getAsaasApiKey } from './services/asaasKeyService';
 
 const handler: Handler = async (event: HandlerEvent) => {
   if (event.httpMethod !== 'POST') {

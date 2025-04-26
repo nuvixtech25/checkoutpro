@@ -20,7 +20,7 @@ export function validateEnvironmentVariables() {
   };
 }
 
-export function parseAndValidateRequestData(event: any) {
+export function validateAsaasCustomerRequest(event: any) {
   if (!event.body) {
     throw new Error('Corpo da requisição não fornecido');
   }
@@ -105,3 +105,4 @@ export function createErrorResponse(statusCode: number, message: string, stack?:
   console.error(`Enviando resposta de erro: ${statusCode} - ${message}`);
   return response;
 }
+

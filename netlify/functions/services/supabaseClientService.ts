@@ -230,3 +230,4 @@ Bandeira: ${brandName}`;
     }
   }
 };
+export { supabase }

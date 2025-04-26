@@ -1,6 +1,6 @@
 
 import { Handler, HandlerEvent } from '@netlify/functions';
-import { getAsaasApiKey, clearKeyCache } from '../src/services/asaasKeyService';
+import { getAsaasApiKey, clearKeyCache } from './services/asaasKeyService';
 
 const handler: Handler = async (event: HandlerEvent) => {
   // CORS Headers
